@@ -122,7 +122,9 @@ const Dashboard = () => {
     return (
       <div className="flex items-center justify-center h-[50vh] text-destructive">
         <AlertCircle className="w-6 h-6 mr-2" />
-        <span>Error loading tickets: {error.message}</span>
+        <span>
+          ბილეთების ჩატვირთვის დროს დაფიქსირდა შეცდომა: {error.message}
+        </span>
       </div>
     );
   }
@@ -150,15 +152,15 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">ტიკეტები</h1>
+        <h1 className="text-2xl font-bold tracking-tight">ბილეთები</h1>
         <Badge variant="outline" className="text-sm">
           სულ: {tickets?.length || 0}
         </Badge>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3">
         {tickets?.map((ticket) => (
           <Card
             key={ticket.id}
@@ -168,7 +170,7 @@ const Dashboard = () => {
               replyingToId === ticket.id && "ring-2 ring-primary"
             )}
           >
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 px-4 py-3">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Mail
@@ -211,14 +213,14 @@ const Dashboard = () => {
                     className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
                   >
                     <MessageCircle className="w-3 h-3 mr-1" />
-                    Needs Response
+                    ჭირდება პასუხის გაცემა
                   </Badge>
                 )}
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              <div className="flex flex-col gap-2">
+            <CardContent className="space-y-3 px-4 py-3">
+              <div className="flex flex-col gap-1.5">
                 <div className="flex items-center text-sm text-muted-foreground">
                   <User className="w-4 h-4 mr-1.5" />
                   <span className="font-medium">გამომგზავნი:</span>
@@ -233,10 +235,10 @@ const Dashboard = () => {
                 )}
               </div>
 
-              <div className="rounded-lg border bg-muted/30 p-4">
-                <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <div className="flex items-center gap-2 mb-1.5 text-sm font-medium text-muted-foreground">
                   <Mail className="w-4 h-4" />
-                  ორიგინალი წერილი
+                  წერილი
                 </div>
                 <div
                   className="prose prose-sm max-w-none dark:prose-invert"
@@ -245,7 +247,7 @@ const Dashboard = () => {
               </div>
 
               {ticket.status === 2 && (
-                <div className="rounded-lg border bg-primary/5 p-4">
+                <div className="rounded-lg border bg-primary/5 p-3">
                   <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
                     <Reply className="w-4 h-4" />
                     პასუხი
@@ -258,7 +260,7 @@ const Dashboard = () => {
             </CardContent>
 
             {ticket.status === 1 && ticket.shouldBeAnswered && (
-              <CardFooter className="flex flex-col space-y-4">
+              <CardFooter className="flex flex-col space-y-3 px-4 py-3">
                 {replyingToId === ticket.id ? (
                   <form
                     onSubmit={handleSubmit(onSubmitReply)}

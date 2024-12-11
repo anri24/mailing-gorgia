@@ -32,6 +32,11 @@ export function useSignIn() {
       onSuccess: (data) => {
         setCredentials({
           accessToken: data.token,
+          id: 1,
+          email: "g.anakidze@gmail.com",
+          firstName: "Giorgi",
+          lastName: "Anakidze",
+          isAdmin: true,
           role: "admin",
         });
 

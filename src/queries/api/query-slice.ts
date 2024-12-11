@@ -95,9 +95,55 @@ const getUsers = api<
   type: "private",
 });
 
+export const UpdateUserSchema = z.object({
+  id: z.number(),
+  email: z.string().email("Invalid email address"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  isAdmin: z.boolean(),
+});
+
+export type UpdateUserType = z.infer<typeof UpdateUserSchema>;
+
+const updateUser = api<UpdateUserType, void>({
+  method: "PUT",
+  path: UsersPath,
+  requestSchema: UpdateUserSchema,
+  responseSchema: z.void(),
+  type: "private",
+});
+
+export const CreateUserSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+});
+
+export type CreateUserType = z.infer<typeof CreateUserSchema>;
+
+const createUser = api<CreateUserType, void>({
+  method: "POST",
+  path: UsersPath,
+  requestSchema: CreateUserSchema,
+  responseSchema: z.void(),
+  type: "private",
+});
+
+const deleteUser = api<number, void>({
+  method: "DELETE",
+  path: (id) => `${UsersPath}?id=${id}`,
+  requestSchema: z.number(),
+  responseSchema: z.void(),
+  type: "private",
+});
+
 export const UsersAPI = {
   getUsers,
-}
+  updateUser,
+  createUser,
+  deleteUser,
+};
 
 export const SignInAPI = {
   signIn,

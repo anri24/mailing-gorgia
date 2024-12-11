@@ -4,7 +4,7 @@ import { AxiosRequestConfig, Method } from "axios";
 
 interface APICallPayload<Request, Response> {
   method: Method;
-  path: string;
+  path: string | ((data: Request) => string);
   requestSchema: z.ZodType<Request>;
   responseSchema: z.ZodType<Response>;
   type?: "private" | "public";
@@ -25,7 +25,7 @@ export function api<Request, Response>({
       throw error;
     }
 
-    let url = path;
+    const url = typeof path === "function" ? path(requestData) : path;
     let params = null;
     let data = null;
 
@@ -33,7 +33,7 @@ export function api<Request, Response>({
       if (method === "GET") {
         params = requestData;
       } else if (method === "DELETE") {
-        url += `${requestData}`;
+        params = null;
       } else {
         data = requestData;
       }
@@ -52,6 +52,9 @@ export function api<Request, Response>({
           ? await instance(config)
           : await instanceWithoutInterceptors(config);
 
+      if (responseSchema instanceof z.ZodVoid) {
+        return undefined as Response;
+      }
       try {
         const validatedResponse = responseSchema.parse(response.data);
         return validatedResponse;
