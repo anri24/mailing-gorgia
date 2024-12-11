@@ -67,6 +67,9 @@ function RootComponent() {
                 <Link to="/" className="[&.active]:font-bold">
                   მთავარი
                 </Link>
+                <Link to="/users" className="[&.active]:font-bold">
+                  მომხმარებლები
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="text-red-500 hover:text-red-700"

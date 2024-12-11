@@ -60,6 +60,45 @@ const getTickets = api<
   type: "private",
 });
 
+const replyToTicket = api<ReplyTicketType, void>({
+  method: "POST",
+  path: TicketsPath,
+  requestSchema: ReplyTicketSchema,
+  responseSchema: z.void(),
+  type: "private",
+});
+
+const UsersPath = "/User";
+
+export const UsersShcema = z.object({
+  email: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  isAdmin: z.boolean(),
+  id: z.number(),
+  isDeleted: z.boolean(),
+});
+
+const UsersResponse = z.array(UsersShcema);
+
+const getUsers = api<
+  { page: number; amount: number },
+  z.infer<typeof UsersResponse>
+>({
+  method: "GET",
+  path: UsersPath,
+  requestSchema: z.object({
+    page: z.number(),
+    amount: z.number(),
+  }),
+  responseSchema: UsersResponse,
+  type: "private",
+});
+
+export const UsersAPI = {
+  getUsers,
+}
+
 export const SignInAPI = {
   signIn,
 };
@@ -69,6 +108,5 @@ export const TicketsAPI = {
   replyToTicket,
 };
 
-export const UsersAPI = {
-  getUsers,
-}
+
+
