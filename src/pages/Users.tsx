@@ -197,7 +197,7 @@ export const Users = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">მომხმარებლები</h1>
+        <h1 className="text-2xl font-bold tracking-tight">მომხმარებლები</h1>
         <div className="flex items-center gap-4">
           {currentUser?.isAdmin && (
             <Button onClick={() => setDialogType("create")} className="gap-2">
@@ -261,17 +261,18 @@ export const Users = () => {
                       <Pencil className="w-4 h-4 mr-2" />
                       რედაქტირება
                     </Button>
-                    {currentUser?.isAdmin && user.id !== currentUser?.id && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(user.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        წაშლა
-                      </Button>
-                    )}
+                    {currentUser?.isAdmin &&
+                      user.id.toString() !== currentUser?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(user.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          წაშლა
+                        </Button>
+                      )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -361,19 +362,20 @@ export const Users = () => {
               </div>
             </div>
 
-            {currentUser?.isAdmin && selectedUser?.id !== currentUser?.id && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isAdmin"
-                  {...registerEdit("isAdmin")}
-                  defaultChecked={selectedUser?.isAdmin}
-                  onCheckedChange={(checked) => {
-                    setEditValue("isAdmin", checked === true);
-                  }}
-                />
-                <Label htmlFor="isAdmin">ადმინისტრატორი</Label>
-              </div>
-            )}
+            {currentUser?.isAdmin &&
+              selectedUser?.id.toString() !== currentUser?.id && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="isAdmin"
+                    {...registerEdit("isAdmin")}
+                    defaultChecked={selectedUser?.isAdmin}
+                    onCheckedChange={(checked) => {
+                      setEditValue("isAdmin", checked === true);
+                    }}
+                  />
+                  <Label htmlFor="isAdmin">ადმინისტრატორი</Label>
+                </div>
+              )}
 
             <div className="flex justify-end gap-2">
               <Button
@@ -501,7 +503,7 @@ export const Users = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>მომხმარებლის წაშლა</AlertDialogTitle>
             <AlertDialogDescription>
-              დარწმუნებული ხართ რომ გსურთ მომხმარებლის წა���ლა? ეს მოქმედება
+              დარწმუნებული ხართ რომ გსურთ მომხმარებლის წაშლა? ეს მოქმედება
               შეუქცევადია.
             </AlertDialogDescription>
           </AlertDialogHeader>

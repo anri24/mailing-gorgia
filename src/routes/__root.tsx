@@ -67,9 +67,11 @@ function RootComponent() {
                 <Link to="/" className="[&.active]:font-bold">
                   მთავარი
                 </Link>
-                <Link to="/users" className="[&.active]:font-bold">
-                  მომხმარებლები
-                </Link>
+                {user.isAdmin && (
+                  <Link to="/users" className="[&.active]:font-bold">
+                    მომხმარებლები
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="text-red-500 hover:text-red-700"
@@ -85,7 +87,7 @@ function RootComponent() {
           </nav>
           {user && (
             <div className="text-sm text-muted-foreground">
-              როლი: {user.role === "admin" ? "ადმინისტრატორი" : "მომხმარებელი"}
+              {user.name} ({user.isAdmin ? "ადმინისტრატორი" : "მომხმარებელი"})
             </div>
           )}
         </header>
