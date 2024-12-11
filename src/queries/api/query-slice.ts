@@ -28,6 +28,13 @@ export type Ticket = z.infer<typeof TicketSchema>;
 const TicketsResponse = z.array(TicketSchema);
 const TicketsPath = "/Ticket";
 
+export const ReplyTicketSchema = z.object({
+  id: z.number(),
+  content: z.string().min(1, "Reply content is required"),
+});
+
+export type ReplyTicketType = z.infer<typeof ReplyTicketSchema>;
+
 const signIn = api<
   z.infer<typeof SignInRequest>,
   z.infer<typeof SignInResponse>
@@ -53,42 +60,13 @@ const getTickets = api<
   type: "private",
 });
 
-
-
-
-const UsersPath = "/User";
-
-export const UsersShcema = z.object({
-  email: z.string(),
-  firstName: z.string(),
-  lastName: z.string(),
-  isAdmin: z.boolean(),
-  id: z.number(),
-  isDeleted: z.boolean(),
-});
-
-const UsersResponse = z.array(UsersShcema);
-
-const getUsers = api<
-  { page: number; amount: number },
-  z.infer<typeof UsersResponse>
->({
-  method: "GET",
-  path: UsersPath,
-  requestSchema: z.object({
-    page: z.number(),
-    amount: z.number(),
-  }),
-  responseSchema: UsersResponse,
-  type: "private",
-});
-
 export const SignInAPI = {
   signIn,
 };
 
 export const TicketsAPI = {
   getTickets,
+  replyToTicket,
 };
 
 export const UsersAPI = {
