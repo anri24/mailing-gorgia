@@ -18,13 +18,21 @@ export function api<Request, Response>({
   responseSchema,
 }: APICallPayload<Request, Response>) {
   return async (requestData: Request) => {
-    requestSchema.parse(requestData);
+    try {
+      requestSchema.parse(requestData);
+    } catch (error) {
+      console.error("❌ Request validation failed:", error);
+      throw error;
+    }
 
     let url = path;
+    let params = null;
     let data = null;
 
     if (requestData) {
-      if (method === "GET" || method === "DELETE") {
+      if (method === "GET") {
+        params = requestData;
+      } else if (method === "DELETE") {
         url += `${requestData}`;
       } else {
         data = requestData;
@@ -34,21 +42,26 @@ export function api<Request, Response>({
     const config: AxiosRequestConfig = {
       method,
       url,
+      params,
       data,
     };
 
-    const response =
-      type === "private"
-        ? await instance(config)
-        : await instanceWithoutInterceptors(config);
+    try {
+      const response =
+        type === "private"
+          ? await instance(config)
+          : await instanceWithoutInterceptors(config);
 
-    const result = responseSchema.safeParse(response.data);
-
-    if (!result.success) {
-      console.error("🚨 Safe-Parsing Failed ", result.error);
-      throw new Error(result.error.message);
-    } else {
-      return result.data;
+      try {
+        const validatedResponse = responseSchema.parse(response.data);
+        return validatedResponse;
+      } catch (error) {
+        console.error("❌ Response validation failed:", error);
+        return response.data as Response;
+      }
+    } catch (error) {
+      console.error("❌ API Call Failed:", error);
+      throw error;
     }
   };
 }

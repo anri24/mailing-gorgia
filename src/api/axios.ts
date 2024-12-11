@@ -3,10 +3,9 @@ import axios, { AxiosError, CreateAxiosDefaults } from "axios";
 
 const baseConfig: CreateAxiosDefaults = {
   baseURL: `${import.meta.env.VITE_API_URL}`,
-  withCredentials: true,
+  withCredentials: false,
   headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
+    Accept: "*/*",
   },
 };
 
@@ -16,21 +15,22 @@ export const instance = axios.create(baseConfig);
 
 instance.interceptors.request.use(
   function (config) {
+    console.log("🔄 Request Interceptor - Starting request:", {
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+    });
+
     const accessToken = useUserStore.getState().user?.accessToken;
 
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    config.headers["Access-Control-Allow-Origin"] = "http://localhost:5173";
-    config.headers["Access-Control-Allow-Methods"] =
-      "GET, POST, PUT, DELETE, OPTIONS";
-    config.headers["Access-Control-Allow-Headers"] =
-      "Content-Type, Authorization";
-
     return config;
   },
   function (error) {
+    console.error("Request Interceptor - Error:", error);
     return Promise.reject(error);
   }
 );

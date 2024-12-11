@@ -10,10 +10,5 @@ export type SignInFormType = z.infer<typeof SignInFormSchema>;
 export type SignInFieldName = keyof SignInFormType;
 
 export const SignInAPIResponseSchema = z.object({
-  status: z.boolean(),
-  message: z.string(),
-  payload: z.object({
-    accessToken: z.string(),
-    role: z.string(),
-  }),
+  token: z.string(),
 });
