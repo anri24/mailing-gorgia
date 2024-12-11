@@ -503,7 +503,7 @@ export const Users = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>მომხმარებლის წაშლა</AlertDialogTitle>
             <AlertDialogDescription>
-              დარწმუნებული ხართ რომ გსურთ მომხმარებლის წაშლა? ეს მოქმედება
+              დარწმუნებული ხართ რომ გსურთ მომხმარებლის წაშ ლა? ეს მოქმედება
               შეუქცევადია.
             </AlertDialogDescription>
           </AlertDialogHeader>
