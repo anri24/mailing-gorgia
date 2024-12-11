@@ -28,21 +28,21 @@ export const SignInForm: FC = () => {
   return (
     <FormProvider {...methods}>
       <form className="form" onSubmit={handleSubmit(onSubmit)}>
-        <Input 
-          type="email" 
-          {...register("email")} 
-          placeholder="Email" 
-        />
+        <Input type="email" {...register("email")} placeholder="Email" />
         {errors.email && (
-          <span className="text-sm text-destructive">{errors.email.message}</span>
+          <span className="text-sm text-destructive">
+            {errors.email.message}
+          </span>
         )}
-        <Input 
-          type="password" 
-          {...register("password")} 
-          placeholder="Password" 
+        <Input
+          type="password"
+          {...register("password")}
+          placeholder="Password"
         />
         {errors.password && (
-          <span className="text-sm text-destructive">{errors.password.message}</span>
+          <span className="text-sm text-destructive">
+            {errors.password.message}
+          </span>
         )}
         <Button type="submit">Sign In</Button>
       </form>
