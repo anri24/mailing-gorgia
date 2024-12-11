@@ -5,6 +5,7 @@ import {
   createRootRoute,
   redirect,
   useNavigate,
+  useRouter,
 } from "@tanstack/react-router";
 import { useUserStore } from "@/store/user";
 
@@ -17,6 +18,9 @@ export const Route = createRootRoute({
     if (!user && !isAuthPage) {
       throw redirect({
         to: "/login",
+        search: {
+          redirect: location.pathname,
+        },
       });
     }
 
@@ -31,6 +35,22 @@ export const Route = createRootRoute({
 function RootComponent() {
   const { user, removeCredentials } = useUserStore();
   const navigate = useNavigate();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    const unsubscribe = useUserStore.subscribe((state) => {
+      const user = state.user;
+      const isAuthPage = router.state.location.pathname === "/login";
+
+      if (!user && !isAuthPage) {
+        navigate({ to: "/login" });
+      } else if (user && isAuthPage) {
+        navigate({ to: "/" });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate, router.state.location.pathname]);
 
   const handleLogout = () => {
     removeCredentials();
@@ -45,24 +65,24 @@ function RootComponent() {
             {user ? (
               <>
                 <Link to="/" className="[&.active]:font-bold">
-                  Dashboard
+                  მთავარი
                 </Link>
                 <button
                   onClick={handleLogout}
                   className="text-red-500 hover:text-red-700"
                 >
-                  Logout
+                  გასვლა
                 </button>
               </>
             ) : (
               <Link to="/login" className="[&.active]:font-bold">
-                Login
+                შესვლა
               </Link>
             )}
           </nav>
           {user && (
             <div className="text-sm text-muted-foreground">
-              Role: {user.role}
+              როლი: {user.role === "admin" ? "ადმინისტრატორი" : "მომხმარებელი"}
             </div>
           )}
         </header>

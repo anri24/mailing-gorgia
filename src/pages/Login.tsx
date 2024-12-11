@@ -38,7 +38,7 @@ export const SignInForm: FC = () => {
         onSubmit={handleSubmit(onSubmit)}
       >
         <div className="flex flex-col gap-2">
-          <Input type="email" {...register("email")} placeholder="Email" />
+          <Input type="email" {...register("email")} placeholder="ელ. ფოსტა" />
           {errors.email && (
             <span className="text-sm text-destructive">
               {errors.email.message}
@@ -50,7 +50,7 @@ export const SignInForm: FC = () => {
           <Input
             type="password"
             {...register("password")}
-            placeholder="Password"
+            placeholder="პაროლი"
           />
           {errors.password && (
             <span className="text-sm text-destructive">
@@ -60,7 +60,7 @@ export const SignInForm: FC = () => {
         </div>
 
         <Button type="submit" disabled={isSubmitting || signIn.isPending}>
-          {signIn.isPending ? "Signing in..." : "Sign In"}
+          {signIn.isPending ? "დაელოდეთ..." : "შესვლა"}
         </Button>
       </form>
     </FormProvider>

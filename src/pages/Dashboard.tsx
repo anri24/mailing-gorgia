@@ -1,86 +1,347 @@
 import { useState } from "react";
-import { useTickets } from "@/queries/api/tickets";
+import { useTickets, useReplyToTicket } from "@/queries/api/tickets";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  ReplyTicketSchema,
+  type ReplyTicketType,
+} from "@/queries/api/query-slice";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import {
+  Mail,
+  Calendar,
+  User,
+  MessageCircle,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Send,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Reply,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const getProviderStyles = (email: string): string => {
+  const domain = email.split("@")[1]?.toLowerCase();
+
+  switch (domain) {
+    case "gmail.com":
+      return "border-2 border-red-500/30 hover:border-red-500/50";
+    case "gorgia.ge":
+      return "border-2 border-blue-500/30 hover:border-blue-500/50";
+    case "yahoo.com":
+      return "border-2 border-purple-500/30 hover:border-purple-500/50";
+    case "outlook.com":
+    case "hotmail.com":
+      return "border-2 border-cyan-500/30 hover:border-cyan-500/50";
+    case "icloud.com":
+      return "border-2 border-sky-500/30 hover:border-sky-500/50";
+    default:
+      return "border hover:border-foreground/50";
+  }
+};
+
+const getProviderIcon = (email: string): string => {
+  const domain = email.split("@")[1]?.toLowerCase();
+
+  switch (domain) {
+    case "gmail.com":
+      return "text-red-500 dark:text-red-400";
+    case "gorgia.ge":
+      return "text-blue-500 dark:text-blue-400";
+    case "yahoo.com":
+      return "text-purple-500 dark:text-purple-400";
+    case "outlook.com":
+    case "hotmail.com":
+      return "text-cyan-500 dark:text-cyan-400";
+    case "icloud.com":
+      return "text-sky-500 dark:text-sky-400";
+    default:
+      return "text-muted-foreground";
+  }
+};
 
 const Dashboard = () => {
   const [page, setPage] = useState(1);
   const [amount] = useState(20);
+  const [replyingToId, setReplyingToId] = useState<number | null>(null);
 
   const { data: tickets, isLoading, error } = useTickets(page, amount);
+  const replyMutation = useReplyToTicket();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ReplyTicketType>({
+    resolver: zodResolver(ReplyTicketSchema),
+  });
+
+  const onSubmitReply = async (data: ReplyTicketType) => {
+    try {
+      await replyMutation.mutateAsync({
+        id: replyingToId!,
+        content: data.content,
+      });
+      setReplyingToId(null);
+      reset();
+    } catch (error) {
+      console.error("Failed to submit reply:", error);
+    }
+  };
 
   if (isLoading) {
-    return <div className="text-center">Loading tickets...</div>;
-  }
-
-  if (error) {
     return (
-      <div className="text-center text-destructive">
-        Error loading tickets: {error.message}
+      <div className="flex items-center justify-center h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[50vh] text-destructive">
+        <AlertCircle className="w-6 h-6 mr-2" />
+        <span>Error loading tickets: {error.message}</span>
+      </div>
+    );
+  }
+
+  const getStatusColor = (status: number) => {
+    switch (status) {
+      case 2:
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      case 1:
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+    }
+  };
+
+  const getStatusText = (status: number) => {
+    switch (status) {
+      case 2:
+        return "დასრულებული";
+      case 1:
+        return "მიმდინარე";
+      default:
+        return "უცნობი";
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Tickets</h1>
-      
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">ტიკეტები</h1>
+        <Badge variant="outline" className="text-sm">
+          სულ: {tickets?.length || 0}
+        </Badge>
+      </div>
+
       <div className="grid gap-4">
         {tickets?.map((ticket) => (
-          <div
+          <Card
             key={ticket.id}
-            className="p-4 rounded-lg border bg-card text-card-foreground"
+            className={cn(
+              "transition-all duration-300",
+              getProviderStyles(ticket.from),
+              replyingToId === ticket.id && "ring-2 ring-primary"
+            )}
           >
-            <div className="flex justify-between items-start mb-2">
-              <h2 className="text-lg font-semibold">{ticket.subject}</h2>
-              <span className="text-sm text-muted-foreground">
-                {new Date(ticket.date).toLocaleDateString()}
-              </span>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="text-sm">
-                <span className="font-medium">From:</span> {ticket.from}
+            <CardHeader className="flex flex-row items-start justify-between space-y-0">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail
+                    className={cn("w-5 h-5", getProviderIcon(ticket.from))}
+                  />
+                  {ticket.subject}
+                </CardTitle>
+                <CardDescription className="mt-1.5">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(ticket.date).toLocaleDateString()}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {new Date(ticket.date).toLocaleString()}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </CardDescription>
               </div>
-              {ticket.to && (
-                <div className="text-sm">
-                  <span className="font-medium">To:</span> {ticket.to}
+              <div className="flex gap-2">
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "transition-colors",
+                    getStatusColor(ticket.status)
+                  )}
+                >
+                  {ticket.status === 2 ? (
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                  ) : (
+                    <Clock className="w-3 h-3 mr-1" />
+                  )}
+                  {getStatusText(ticket.status)}
+                </Badge>
+                {ticket.shouldBeAnswered && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                  >
+                    <MessageCircle className="w-3 h-3 mr-1" />
+                    Needs Response
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <User className="w-4 h-4 mr-1.5" />
+                  <span className="font-medium">გამომგზავნი:</span>
+                  <span className="ml-1">{ticket.from}</span>
+                </div>
+                {ticket.to && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Send className="w-4 h-4 mr-1.5" />
+                    <span className="font-medium">მიმღები:</span>
+                    <span className="ml-1">{ticket.to}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
+                  <Mail className="w-4 h-4" />
+                  ორიგინალი წერილი
+                </div>
+                <div
+                  className="prose prose-sm max-w-none dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: ticket.content }}
+                />
+              </div>
+
+              {ticket.status === 2 && (
+                <div className="rounded-lg border bg-primary/5 p-4">
+                  <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
+                    <Reply className="w-4 h-4" />
+                    პასუხი
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    პასუხის გრაფა გვაკლია
+                  </div>
                 </div>
               )}
-              <div 
-                className="text-sm mt-2 prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: ticket.content }}
-              />
-            </div>
+            </CardContent>
 
-            <div className="mt-4 flex gap-2 text-sm">
-              <span className={`px-2 py-1 rounded-full ${
-                ticket.status === 2 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {ticket.status === 2 ? 'Completed' : 'Pending'}
-              </span>
-              {ticket.shouldBeAnswered && (
-                <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                  Needs Response
-                </span>
-              )}
-            </div>
-          </div>
+            {ticket.status === 1 && ticket.shouldBeAnswered && (
+              <CardFooter className="flex flex-col space-y-4">
+                {replyingToId === ticket.id ? (
+                  <form
+                    onSubmit={handleSubmit(onSubmitReply)}
+                    className="w-full space-y-4"
+                  >
+                    <div className="rounded-lg border bg-card p-4">
+                      <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
+                        <Reply className="w-4 h-4" />
+                        თქვენი პასუხი
+                      </div>
+                      <Textarea
+                        {...register("content")}
+                        placeholder="შეიყვანეთ პასუხი..."
+                        className={cn(
+                          "min-h-[100px] resize-none bg-background",
+                          errors.content && "border-destructive"
+                        )}
+                      />
+                      {errors.content && (
+                        <p className="text-sm text-destructive mt-1.5">
+                          {errors.content.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        disabled={replyMutation.isPending}
+                        className="gap-2"
+                      >
+                        {replyMutation.isPending && (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        )}
+                        {replyMutation.isPending ? "იგზავნება..." : "გაგზავნა"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setReplyingToId(null);
+                          reset();
+                        }}
+                        className="gap-2"
+                      >
+                        <X className="w-4 h-4" />
+                        გაუქმება
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <Button
+                    onClick={() => setReplyingToId(ticket.id)}
+                    className="gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    პასუხი
+                  </Button>
+                )}
+              </CardFooter>
+            )}
+          </Card>
         ))}
       </div>
 
       <div className="flex justify-between items-center">
         <Button
+          variant="outline"
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={page === 1}
+          className="gap-2"
         >
-          Previous
+          <ChevronLeft className="w-4 h-4" />
+          წინა
         </Button>
-        <span>Page {page}</span>
+        <Badge variant="secondary">გვერდი {page}</Badge>
         <Button
+          variant="outline"
           onClick={() => setPage((p) => p + 1)}
           disabled={!tickets || tickets.length < amount}
+          className="gap-2"
         >
-          Next
+          შემდეგი
+          <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
     </div>

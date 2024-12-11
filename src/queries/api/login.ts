@@ -1,6 +1,7 @@
 import { AxiosError } from "axios";
 import { useUserStore } from "@/store/user";
 import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { SignInAPI } from "@/queries/api/query-slice";
 import { SignInFormType } from "@/schemas/signInSchema";
 import { toast } from "sonner";
@@ -15,6 +16,8 @@ interface SignInResponse {
 
 export function useSignIn() {
   const { setCredentials } = useUserStore();
+  const navigate = useNavigate();
+
   return useMutation<SignInResponse, AxiosError<ErrorResponse>, SignInFormType>(
     {
       mutationFn: async (user) => {
@@ -33,6 +36,9 @@ export function useSignIn() {
         });
 
         toast.success("Successfully signed in");
+
+        // Navigate to dashboard after successful login
+        navigate({ to: "/" });
       },
       onError: (error) => {
         const errorMessage =

@@ -28,6 +28,13 @@ export type Ticket = z.infer<typeof TicketSchema>;
 const TicketsResponse = z.array(TicketSchema);
 const TicketsPath = "/Ticket";
 
+export const ReplyTicketSchema = z.object({
+  id: z.number(),
+  content: z.string().min(1, "Reply content is required"),
+});
+
+export type ReplyTicketType = z.infer<typeof ReplyTicketSchema>;
+
 const signIn = api<
   z.infer<typeof SignInRequest>,
   z.infer<typeof SignInResponse>
@@ -53,10 +60,19 @@ const getTickets = api<
   type: "private",
 });
 
+const replyToTicket = api<ReplyTicketType, void>({
+  method: "POST",
+  path: TicketsPath,
+  requestSchema: ReplyTicketSchema,
+  responseSchema: z.void(),
+  type: "private",
+});
+
 export const SignInAPI = {
   signIn,
 };
 
 export const TicketsAPI = {
   getTickets,
+  replyToTicket,
 };

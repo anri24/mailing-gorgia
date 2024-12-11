@@ -15,12 +15,6 @@ export const instance = axios.create(baseConfig);
 
 instance.interceptors.request.use(
   function (config) {
-    console.log("🔄 Request Interceptor - Starting request:", {
-      url: config.url,
-      method: config.method,
-      headers: config.headers,
-    });
-
     const accessToken = useUserStore.getState().user?.accessToken;
 
     if (accessToken) {
