@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useUsers } from "@/queries/api/user";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,6 +24,7 @@ import {
   Pencil,
   Trash2,
   UserPlus,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,10 +71,6 @@ export const Users = () => {
   const { user: currentUser } = useUserStore();
   const queryClient = useQueryClient();
   const { data: users, isLoading, error } = useUsers(page, amount);
-
-  const filteredUsers = useMemo(() => {
-    return users?.filter((user) => !user.isDeleted);
-  }, [users]);
 
   const {
     register: registerEdit,
@@ -123,13 +120,13 @@ export const Users = () => {
   const deleteMutation = useMutation({
     mutationFn: UsersAPI.deleteUser,
     onSuccess: () => {
-      toast.success("მომხმარებელი წაიშალა");
+      toast.success("მომხმარებელი წარმატებით განახლდა");
       queryClient.invalidateQueries({ queryKey: ["users"] });
       setDeleteDialogOpen(false);
     },
     onError: (error) => {
-      toast.error("წაშლა ვერ მოხერხდა");
-      console.error("Failed to delete user:", error);
+      toast.error("მოქმედება ვერ მოხერხდა");
+      console.error("Failed to update isDeleted status:", error);
     },
   });
 
@@ -172,7 +169,7 @@ export const Users = () => {
   };
 
   const handleNextPage = () => {
-    if (filteredUsers && filteredUsers.length >= amount) {
+    if (users && users.length >= amount) {
       setPage((p) => p + 1);
     }
   };
@@ -210,7 +207,7 @@ export const Users = () => {
             </Button>
           )}
           <Badge variant="outline" className="text-sm">
-            სულ: {filteredUsers?.length || 0}
+            სულ: {users?.length || 0}
           </Badge>
         </div>
       </div>
@@ -222,11 +219,12 @@ export const Users = () => {
               <TableHead>სახელი</TableHead>
               <TableHead>ელ. ფოსტა</TableHead>
               <TableHead>როლი</TableHead>
+              <TableHead>სტატუსი</TableHead>
               <TableHead className="text-right">მოქმედება</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers?.map((user) => (
+            {users?.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
@@ -255,27 +253,52 @@ export const Users = () => {
                     )}
                   </div>
                 </TableCell>
+                <TableCell>
+                  {user.isDeleted && (
+                    <Badge variant="destructive" className="text-xs">
+                      წაშლილია
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEdit(user)}
+                      disabled={user.isDeleted}
+                      className={cn(
+                        user.isDeleted && "opacity-50 cursor-not-allowed"
+                      )}
                     >
                       <Pencil className="w-4 h-4 mr-2" />
                       რედაქტირება
                     </Button>
                     {currentUser?.isAdmin &&
-                      user.id.toString() !== currentUser?.id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(user.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          წაშლა
-                        </Button>
+                      user.id.toString() !== currentUser.id && (
+                        <>
+                          {!user.isDeleted ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(user.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              წაშლა
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(user.id)}
+                              className="text-green-500 hover:text-green-600"
+                            >
+                              <ShieldOff className="w-4 h-4 mr-2" />
+                              აღდგენა
+                            </Button>
+                          )}
+                        </>
                       )}
                   </div>
                 </TableCell>
@@ -299,7 +322,7 @@ export const Users = () => {
         <Button
           variant="outline"
           onClick={handleNextPage}
-          disabled={!filteredUsers || filteredUsers.length < amount}
+          disabled={!users || users.length < amount}
           className="gap-2"
         >
           შემდეგი
@@ -324,11 +347,16 @@ export const Users = () => {
 
             <div className="space-y-2">
               <Label htmlFor="email">ელ. ფოსტა</Label>
-              <Input
-                id="email"
-                {...registerEdit("email")}
-                className={cn(editErrors.email && "border-destructive")}
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  {...registerEdit("email")}
+                  className={cn(editErrors.email && "border-destructive pl-10")}
+                  placeholder="mail@example.com"
+                />
+              </div>
               {editErrors.email && (
                 <p className="text-sm text-destructive">
                   {editErrors.email.message}
@@ -343,6 +371,7 @@ export const Users = () => {
                   id="firstName"
                   {...registerEdit("firstName")}
                   className={cn(editErrors.firstName && "border-destructive")}
+                  placeholder="სახელი"
                 />
                 {editErrors.firstName && (
                   <p className="text-sm text-destructive">
@@ -357,6 +386,7 @@ export const Users = () => {
                   id="lastName"
                   {...registerEdit("lastName")}
                   className={cn(editErrors.lastName && "border-destructive")}
+                  placeholder="გვარი"
                 />
                 {editErrors.lastName && (
                   <p className="text-sm text-destructive">
@@ -367,7 +397,7 @@ export const Users = () => {
             </div>
 
             {currentUser?.isAdmin &&
-              selectedUser?.id.toString() !== currentUser?.id && (
+              selectedUser?.id.toString() !== currentUser.id.toString() && (
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="isAdmin"
@@ -387,10 +417,14 @@ export const Users = () => {
                 disabled={updateMutation.isPending}
                 className="gap-2"
               >
-                {updateMutation.isPending && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                {updateMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    დაელოდეთ...
+                  </>
+                ) : (
+                  "შენახვა"
                 )}
-                {updateMutation.isPending ? "მიმდინარეობს..." : "შენახვა"}
               </Button>
               <Button
                 type="button"
@@ -422,11 +456,18 @@ export const Users = () => {
           >
             <div className="space-y-2">
               <Label htmlFor="email">ელ. ფოსტა</Label>
-              <Input
-                id="email"
-                {...registerCreate("email")}
-                className={cn(createErrors.email && "border-destructive")}
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  {...registerCreate("email")}
+                  className={cn(
+                    createErrors.email && "border-destructive pl-10"
+                  )}
+                  placeholder="mail@example.com"
+                />
+              </div>
               {createErrors.email && (
                 <p className="text-sm text-destructive">
                   {createErrors.email.message}
@@ -436,12 +477,18 @@ export const Users = () => {
 
             <div className="space-y-2">
               <Label htmlFor="password">პაროლი</Label>
-              <Input
-                id="password"
-                type="password"
-                {...registerCreate("password")}
-                className={cn(createErrors.password && "border-destructive")}
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  {...registerCreate("password")}
+                  className={cn(
+                    createErrors.password && "border-destructive pl-10"
+                  )}
+                  placeholder="••••••••"
+                />
+              </div>
               {createErrors.password && (
                 <p className="text-sm text-destructive">
                   {createErrors.password.message}
@@ -456,6 +503,7 @@ export const Users = () => {
                   id="firstName"
                   {...registerCreate("firstName")}
                   className={cn(createErrors.firstName && "border-destructive")}
+                  placeholder="სახელი"
                 />
                 {createErrors.firstName && (
                   <p className="text-sm text-destructive">
@@ -470,6 +518,7 @@ export const Users = () => {
                   id="lastName"
                   {...registerCreate("lastName")}
                   className={cn(createErrors.lastName && "border-destructive")}
+                  placeholder="გვარი"
                 />
                 {createErrors.lastName && (
                   <p className="text-sm text-destructive">
@@ -485,10 +534,14 @@ export const Users = () => {
                 disabled={createMutation.isPending}
                 className="gap-2"
               >
-                {createMutation.isPending && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                {createMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    დაელოდეთ...
+                  </>
+                ) : (
+                  "დამატება"
                 )}
-                {createMutation.isPending ? "მიმდინარეობს..." : "დამატება"}
               </Button>
               <Button
                 type="button"
@@ -505,10 +558,17 @@ export const Users = () => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>მომხმარებლის წაშლა</AlertDialogTitle>
+            <AlertDialogTitle>
+              {userToDelete &&
+              users?.find((user) => user.id === userToDelete)?.isDeleted
+                ? "მომხმარებლის აღდგენა"
+                : "მომხმარებლის წაშლა"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              დარწმუნებული ხართ რომ გსურთ მომხმარებლის წაშლა? ეს მოქმედება
-              შეუქცევადია.
+              {userToDelete &&
+              users?.find((user) => user.id === userToDelete)?.isDeleted
+                ? "დარწმუნებული ხართ, რომ გსურთ მომხმარებლის აღდგენა? ეს შეძლებს მის ჩაწერას სისტემაში."
+                : "დარწმუნებული ხართ, რომ გსურთ მომხმარებლის წაშლა? ეს მოქმედება შეუქცევადია."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -521,14 +581,30 @@ export const Users = () => {
                   deleteMutation.mutate(userToDelete);
                 }
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className={cn(
+                users?.find((user) => user.id === userToDelete)?.isDeleted
+                  ? "bg-green-500 text-white hover:bg-green-600"
+                  : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              )}
             >
               {deleteMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : (
-                <Trash2 className="w-4 h-4 mr-2" />
+                <>
+                  {users?.find((user) => user.id === userToDelete)
+                    ?.isDeleted ? (
+                    <>
+                      <ShieldOff className="w-4 h-4 mr-2" />
+                      აღდგენა
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      წაშლა
+                    </>
+                  )}
+                </>
               )}
-              წაშლა
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
