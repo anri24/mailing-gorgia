@@ -14,14 +14,19 @@ export function useReplyToTicket() {
 
   return useMutation({
     mutationFn: TicketsAPI.replyToTicket,
-    onSuccess: () => {
-      toast.success("Reply sent successfully");
-      // Invalidate tickets query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("პასუხი წარმატებით გაიგზავნა");
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      } else {
+        toast.error(response.message === "Ticket was already answered" 
+          ? "ბილეთს უკვე გაეცა პასუხი"
+          : "პასუხის გაგზავნა ვერ მოხერხდა");
+      }
     },
     onError: (error) => {
       console.error("Failed to send reply:", error);
-      toast.error("Failed to send reply");
+      toast.error("პასუხის გაგზავნა ვერ მოხერხდა");
     },
   });
 }

@@ -19,6 +19,7 @@ export const TicketSchema = z.object({
   date: z.string(),
   status: z.number(),
   shouldBeAnswered: z.boolean(),
+  ticketAnswer: z.string().nullable(),
   id: z.number(),
   isDeleted: z.boolean(),
 });
@@ -60,11 +61,14 @@ const getTickets = api<
   type: "private",
 });
 
-const replyToTicket = api<ReplyTicketType, void>({
+const replyToTicket = api<ReplyTicketType, { success: boolean; message: string }>({
   method: "POST",
-  path: TicketsPath,
+  path: ({ id, content }) => `${TicketsPath}?id=${id}&content=${encodeURIComponent(content)}`,
   requestSchema: ReplyTicketSchema,
-  responseSchema: z.void(),
+  responseSchema: z.object({
+    success: z.boolean(),
+    message: z.string(),
+  }),
   type: "private",
 });
 
