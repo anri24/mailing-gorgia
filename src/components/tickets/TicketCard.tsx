@@ -50,7 +50,7 @@ const getStatusBadge = (ticket: Ticket) => {
         variant: "outline" as const,
         text: "პასუხგაცემული",
         className:
-          "bg-gorgia-dark-blue/10 text-gorgia-dark-blue border-gorgia-dark-blue/20",
+          "bg-lime-500/10 text-lime-500 border-lime-500/20",
       };
     case "noReplyNeeded":
       return {
