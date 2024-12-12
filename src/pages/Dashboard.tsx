@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTickets, useReplyToTicket } from "@/queries/api/tickets";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,8 +37,19 @@ import {
   ChevronRight,
   Loader2,
   Reply,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const getProviderStyles = (email: string): string => {
   const domain = email.split("@")[1]?.toLowerCase();
@@ -84,6 +95,9 @@ const Dashboard = () => {
   const [page, setPage] = useState(1);
   const [amount] = useState(20);
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<number | null>(null);
+  const [showAnsweredTickets, setShowAnsweredTickets] = useState(false);
 
   const { data: tickets, isLoading, error } = useTickets(page, amount);
   const replyMutation = useReplyToTicket();
@@ -110,25 +124,6 @@ const Dashboard = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-[50vh] text-destructive">
-        <AlertCircle className="w-6 h-6 mr-2" />
-        <span>
-          ბილეთების ჩატვირთვის დროს დაფიქსირდა შეცდომა: {error.message}
-        </span>
-      </div>
-    );
-  }
-
   const getStatusColor = (status: number) => {
     switch (status) {
       case 2:
@@ -151,17 +146,119 @@ const Dashboard = () => {
     }
   };
 
+  // Filter tickets based on search query and status
+  const filteredTickets = useMemo(() => {
+    return tickets?.filter((ticket) => {
+      const matchesSearchQuery =
+        ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.from.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesStatus =
+        filterStatus === null || ticket.status === filterStatus;
+
+      return matchesSearchQuery && matchesStatus;
+    });
+  }, [tickets, searchQuery, filterStatus]);
+
+  // Filter tickets that need a reply based on the filtered results
+  const displayedTickets = useMemo(() => {
+    if (showAnsweredTickets) {
+      return filteredTickets;
+    }
+    return filteredTickets?.filter(
+      (ticket) => ticket.shouldBeAnswered && ticket.status === 1
+    );
+  }, [filteredTickets, showAnsweredTickets]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[50vh] text-destructive">
+        <AlertCircle className="w-6 h-6 mr-2" />
+        <span>
+          ბილეთების ჩატვირთვის დროს დაფიქსირდა შეცდომა: {error.message}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold tracking-tight">ბილეთები</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          პასუხგაუცემელი წერილები
+        </h1>
         <Badge variant="outline" className="text-sm">
-          სულ: {tickets?.length || 0}
+          სულ: {displayedTickets?.length || 0}
         </Badge>
       </div>
 
+      {/* Filtering and Search Controls */}
+      <div className="flex items-center gap-4">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="ძებნა სათაურის ან გამომგზავნის მიხედვით..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select
+          onValueChange={(value) =>
+            setFilterStatus(value === "null" ? null : parseInt(value))
+          }
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="სტატუსის ფილტრი" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="null">ყველა</SelectItem>
+            <SelectItem value="0">უცნობი</SelectItem>
+            <SelectItem value="1">მიმდინარე</SelectItem>
+            <SelectItem value="2">დასრულებული</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="show-answered"
+            checked={showAnsweredTickets}
+            onCheckedChange={setShowAnsweredTickets}
+          />
+          <Label htmlFor="show-answered">გაცემული პასუხების ჩვენება</Label>
+        </div>
+      </div>
+
       <div className="grid gap-3">
-        {tickets?.map((ticket) => (
+        {/* Display a message when there are no unanswered tickets after filtering */}
+        {displayedTickets?.length === 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {searchQuery || filterStatus !== null
+                  ? "ასეთი წერილები არ მოიძებნა"
+                  : showAnsweredTickets
+                    ? "წერილები არ მოიძებნა"
+                    : "ყველა წერილს გაეცა პასუხი"}
+              </CardTitle>
+              <CardDescription>
+                {searchQuery || filterStatus !== null
+                  ? "არ მოიძებნა წერილები მითითებული კრიტერიუმებით."
+                  : showAnsweredTickets
+                    ? "სისტემაში წერილები არ არის."
+                    : "ამჟამად არ არის პასუხგაუცემელი წერილები."}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+        {displayedTickets?.map((ticket) => (
           <Card
             key={ticket.id}
             className={cn(
@@ -259,58 +356,58 @@ const Dashboard = () => {
               )}
             </CardContent>
 
-            {ticket.status === 1 && ticket.shouldBeAnswered && (
-              <CardFooter className="flex flex-col space-y-3 px-4 py-3">
-                {replyingToId === ticket.id ? (
-                  <form
-                    onSubmit={handleSubmit(onSubmitReply)}
-                    className="w-full space-y-4"
-                  >
-                    <div className="rounded-lg border bg-card p-4">
-                      <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
-                        <Reply className="w-4 h-4" />
-                        თქვენი პასუხი
-                      </div>
-                      <Textarea
-                        {...register("content")}
-                        placeholder="შეიყვანეთ პასუხი..."
-                        className={cn(
-                          "min-h-[100px] resize-none bg-background",
-                          errors.content && "border-destructive"
-                        )}
-                      />
-                      {errors.content && (
-                        <p className="text-sm text-destructive mt-1.5">
-                          {errors.content.message}
-                        </p>
+            <CardFooter className="flex flex-col space-y-3 px-4 py-3">
+              {replyingToId === ticket.id ? (
+                <form
+                  onSubmit={handleSubmit(onSubmitReply)}
+                  className="w-full space-y-4"
+                >
+                  <div className="rounded-lg border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
+                      <Reply className="w-4 h-4" />
+                      თქვენი პასუხი
+                    </div>
+                    <Textarea
+                      {...register("content")}
+                      placeholder="შეიყვანეთ პასუხი..."
+                      className={cn(
+                        "min-h-[100px] resize-none bg-background",
+                        errors.content && "border-destructive"
                       )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="submit"
-                        disabled={replyMutation.isPending}
-                        className="gap-2"
-                      >
-                        {replyMutation.isPending && (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        )}
-                        {replyMutation.isPending ? "იგზავნება..." : "გაგზავნა"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setReplyingToId(null);
-                          reset();
-                        }}
-                        className="gap-2"
-                      >
-                        <X className="w-4 h-4" />
-                        გაუქმება
-                      </Button>
-                    </div>
-                  </form>
-                ) : (
+                    />
+                    {errors.content && (
+                      <p className="text-sm text-destructive mt-1.5">
+                        {errors.content.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      disabled={replyMutation.isPending}
+                      className="gap-2"
+                    >
+                      {replyMutation.isPending && (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      )}
+                      {replyMutation.isPending ? "იგზავნება..." : "გაგზავნა"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setReplyingToId(null);
+                        reset();
+                      }}
+                      className="gap-2"
+                    >
+                      <X className="w-4 h-4" />
+                      გაუქმება
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                ticket.status !== 2 && (
                   <Button
                     onClick={() => setReplyingToId(ticket.id)}
                     className="gap-2"
@@ -318,9 +415,9 @@ const Dashboard = () => {
                     <MessageCircle className="w-4 h-4" />
                     პასუხი
                   </Button>
-                )}
-              </CardFooter>
-            )}
+                )
+              )}
+            </CardFooter>
           </Card>
         ))}
       </div>
@@ -339,7 +436,7 @@ const Dashboard = () => {
         <Button
           variant="outline"
           onClick={() => setPage((p) => p + 1)}
-          disabled={!tickets || tickets.length < amount}
+          disabled={!displayedTickets || displayedTickets.length < amount}
           className="gap-2"
         >
           შემდეგი
