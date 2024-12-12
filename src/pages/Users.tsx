@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useUsers } from "@/queries/api/user";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -70,6 +70,10 @@ export const Users = () => {
   const { user: currentUser } = useUserStore();
   const queryClient = useQueryClient();
   const { data: users, isLoading, error } = useUsers(page, amount);
+
+  const filteredUsers = useMemo(() => {
+    return users?.filter((user) => !user.isDeleted);
+  }, [users]);
 
   const {
     register: registerEdit,
@@ -168,7 +172,7 @@ export const Users = () => {
   };
 
   const handleNextPage = () => {
-    if (users && users.length >= amount) {
+    if (filteredUsers && filteredUsers.length >= amount) {
       setPage((p) => p + 1);
     }
   };
@@ -206,7 +210,7 @@ export const Users = () => {
             </Button>
           )}
           <Badge variant="outline" className="text-sm">
-            სულ: {users?.length || 0}
+            სულ: {filteredUsers?.length || 0}
           </Badge>
         </div>
       </div>
@@ -222,7 +226,7 @@ export const Users = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users?.map((user) => (
+            {filteredUsers?.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
@@ -295,7 +299,7 @@ export const Users = () => {
         <Button
           variant="outline"
           onClick={handleNextPage}
-          disabled={!users || users.length < amount}
+          disabled={!filteredUsers || filteredUsers.length < amount}
           className="gap-2"
         >
           შემდეგი
@@ -503,7 +507,7 @@ export const Users = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>მომხმარებლის წაშლა</AlertDialogTitle>
             <AlertDialogDescription>
-              დარწმუნებული ხართ რომ გსურთ მომხმარებლის წაშ ლა? ეს მოქმედება
+              დარწმუნებული ხართ რომ გსურთ მომხმარებლის წაშლა? ეს მოქმედება
               შეუქცევადია.
             </AlertDialogDescription>
           </AlertDialogHeader>
