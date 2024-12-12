@@ -8,6 +8,8 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { useUserStore } from "@/store/user";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -55,6 +57,7 @@ function RootComponent() {
   const handleLogout = () => {
     removeCredentials();
     navigate({ to: "/login" });
+    toast.success("წარმატებით გამოხვედით სისტემიდან");
   };
 
   return (
@@ -95,6 +98,7 @@ function RootComponent() {
           <Outlet />
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }

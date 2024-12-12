@@ -49,7 +49,6 @@ export function useSignIn() {
         isAdmin: decoded.IsAdmin.toLowerCase() === "true",
       });
 
-      toast.success("Successfully signed in");
       navigate({ to: "/" });
     },
     onError: (error) => {

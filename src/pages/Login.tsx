@@ -9,6 +9,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export const SignInForm: FC = () => {
   const methods = useForm<SignInFormType>({
@@ -30,7 +31,9 @@ export const SignInForm: FC = () => {
   const onSubmit: SubmitHandler<SignInFormType> = async (data) => {
     try {
       await signIn.mutateAsync(data);
+      toast.success("წარმატებით შეხვედით სისტემაში");
     } catch (error) {
+      toast.error("შესვლა ვერ მოხერხდა. გთხოვთ, შეამოწმოთ თქვენი მონაცემები");
       console.error("Form submission error:", error);
     }
   };
