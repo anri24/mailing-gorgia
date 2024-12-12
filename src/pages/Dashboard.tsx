@@ -22,8 +22,12 @@ export const Dashboard = () => {
   const [filterStatus, setFilterStatus] = useState<number | null>(null);
   const [showAnsweredTickets, setShowAnsweredTickets] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [replyContents, setReplyContents] = useState<Record<number, string>>({});
-  const [replyingTickets, setReplyingTickets] = useState<Record<number, boolean>>({});
+  const [replyContents, setReplyContents] = useState<Record<number, string>>(
+    {}
+  );
+  const [replyingTickets, setReplyingTickets] = useState<
+    Record<number, boolean>
+  >({});
 
   const { data: tickets, isLoading, error } = useTickets(page, amount);
   const replyMutation = useReplyToTicket();
@@ -36,9 +40,8 @@ export const Dashboard = () => {
     }
 
     try {
-      setReplyingTickets(prev => ({ ...prev, [ticketId]: true }));
+      setReplyingTickets((prev) => ({ ...prev, [ticketId]: true }));
       await replyMutation.mutateAsync({ id: ticketId, content });
-      // Clear the reply content on success
       setReplyContents((prev) => {
         const next = { ...prev };
         delete next[ticketId];
@@ -47,11 +50,10 @@ export const Dashboard = () => {
     } catch (error) {
       console.error("Reply error:", error);
     } finally {
-      setReplyingTickets(prev => ({ ...prev, [ticketId]: false }));
+      setReplyingTickets((prev) => ({ ...prev, [ticketId]: false }));
     }
   };
 
-  // Filter tickets based on search query and status
   const displayedTickets = tickets?.filter((ticket) => {
     const matchesSearch =
       !searchQuery ||
@@ -61,8 +63,7 @@ export const Dashboard = () => {
     const matchesStatus =
       filterStatus === null || ticket.status === filterStatus;
 
-    const matchesAnswered =
-      showAnsweredTickets || !ticket.ticketAnswer;
+    const matchesAnswered = showAnsweredTickets || !ticket.ticketAnswer;
 
     return matchesSearch && matchesStatus && matchesAnswered;
   });
@@ -72,10 +73,7 @@ export const Dashboard = () => {
       <div className="flex items-center justify-center h-[50vh]">
         <div className="animate-pulse space-y-4 w-full max-w-2xl">
           {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="bg-muted rounded-lg h-[200px] w-full"
-            />
+            <div key={i} className="bg-muted rounded-lg h-[200px] w-full" />
           ))}
         </div>
       </div>
@@ -85,7 +83,9 @@ export const Dashboard = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh] text-destructive">
-        <span>ბილეთების ჩატვირთვის დროს დაფიქსირდა შეცდომა: {error.message}</span>
+        <span>
+          ბილეთების ჩატვირთვის დროს დაფიქსირდა შეცდომა: {error.message}
+        </span>
       </div>
     );
   }
@@ -133,7 +133,7 @@ export const Dashboard = () => {
             checked={showAnsweredTickets}
             onCheckedChange={setShowAnsweredTickets}
           />
-          <Label htmlFor="show-answered">გაცემული პასუხების ჩვენება</Label>
+          <Label htmlFor="show-answered">ყველა ბილეთების ჩვენება</Label>
         </div>
       </div>
 
@@ -159,8 +159,8 @@ export const Dashboard = () => {
             {searchQuery || filterStatus !== null
               ? "ასეთი წერილები არ მოიძებნა"
               : showAnsweredTickets
-              ? "წერილები არ მოიძებნა"
-              : "ყველა წერილს გაეცა პასუხი"}
+                ? "წერილები არ მოიძებნა"
+                : "ყველა წერილს გაეცა პასუხი"}
           </div>
         )}
       </div>
