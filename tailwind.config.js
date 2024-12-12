@@ -10,6 +10,7 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       colors: {
+        'gorgia-dark-blue': '#105D8D',
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

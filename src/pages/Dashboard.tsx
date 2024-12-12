@@ -10,17 +10,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TicketCard } from "@/components/tickets/TicketCard";
+import { Ticket } from "@/queries/api/query-slice";
+
+type FilterStatus = "all" | "needsAnswer" | "answered" | "noReplyNeeded";
 
 export const Dashboard = () => {
   const [page, setPage] = useState(1);
   const [amount] = useState(20);
-  const [filterStatus, setFilterStatus] = useState<number | null>(null);
-  const [showAnsweredTickets, setShowAnsweredTickets] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [replyContents, setReplyContents] = useState<Record<number, string>>(
     {}
@@ -54,18 +54,23 @@ export const Dashboard = () => {
     }
   };
 
+  const getTicketStatus = (ticket: Ticket) => {
+    if (ticket.status === 2) return "answered";
+    if (ticket.status === 1 && !ticket.shouldBeAnswered) return "noReplyNeeded";
+    return "needsAnswer";
+  };
+
   const displayedTickets = tickets?.filter((ticket) => {
     const matchesSearch =
       !searchQuery ||
       ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.from.toLowerCase().includes(searchQuery.toLowerCase());
 
+    const ticketStatus = getTicketStatus(ticket);
     const matchesStatus =
-      filterStatus === null || ticket.status === filterStatus;
+      filterStatus === "all" || ticketStatus === filterStatus;
 
-    const matchesAnswered = showAnsweredTickets || !ticket.ticketAnswer;
-
-    return matchesSearch && matchesStatus && matchesAnswered;
+    return matchesSearch && matchesStatus;
   });
 
   if (isLoading) {
@@ -93,9 +98,7 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold tracking-tight">
-          პასუხგაუცემელი წერილები
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">წერილები</h1>
         <Badge variant="outline" className="text-sm">
           სულ: {displayedTickets?.length || 0}
         </Badge>
@@ -112,29 +115,19 @@ export const Dashboard = () => {
           />
         </div>
         <Select
-          value={filterStatus?.toString() ?? "null"}
-          onValueChange={(value) =>
-            setFilterStatus(value === "null" ? null : parseInt(value))
-          }
+          value={filterStatus}
+          onValueChange={(value: FilterStatus) => setFilterStatus(value)}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="სტატუსის ფი��ტრი" />
+            <SelectValue placeholder="სტატუსის ფილტრი" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="null">ყველა</SelectItem>
-            <SelectItem value="0">უცნობი</SelectItem>
-            <SelectItem value="1">მიმდინარე</SelectItem>
-            <SelectItem value="2">დასრულებული</SelectItem>
+            <SelectItem value="all">ყველა</SelectItem>
+            <SelectItem value="needsAnswer">პასუხის მოლოდინში</SelectItem>
+            <SelectItem value="answered">პასუხგაცემული</SelectItem>
+            <SelectItem value="noReplyNeeded">პასუხს არ საჭიროებს</SelectItem>
           </SelectContent>
         </Select>
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="show-answered"
-            checked={showAnsweredTickets}
-            onCheckedChange={setShowAnsweredTickets}
-          />
-          <Label htmlFor="show-answered">ყველა ბილეთების ჩვენება</Label>
-        </div>
       </div>
 
       <div className="grid gap-4">
@@ -156,11 +149,15 @@ export const Dashboard = () => {
 
         {displayedTickets?.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            {searchQuery || filterStatus !== null
+            {searchQuery
               ? "ასეთი წერილები არ მოიძებნა"
-              : showAnsweredTickets
-                ? "წერილები არ მოიძებნა"
-                : "ყველა წერილს გაეცა პასუხი"}
+              : filterStatus === "needsAnswer"
+                ? "პასუხის მოლოდინში მყოფი წერილები არ არის"
+                : filterStatus === "answered"
+                  ? "პასუხგაცემული წერილები არ არის"
+                  : filterStatus === "noReplyNeeded"
+                    ? "წერილები, რომლებიც არ საჭიროებენ პასუხს, არ არის"
+                    : "წერილები არ მოიძებნა"}
           </div>
         )}
       </div>

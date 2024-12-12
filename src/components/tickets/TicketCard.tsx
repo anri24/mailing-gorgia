@@ -9,11 +9,9 @@ import {
   Mail,
   Send,
   Loader2,
-  Clock,
-  CheckCircle2,
-  MessageCircle,
-  ArrowUpRight,
   Calendar,
+  ArrowUpRight,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,49 +23,48 @@ interface TicketCardProps {
   isReplying: boolean;
 }
 
-const getProviderIcon = (email: string): string => {
-  const domain = email.split("@")[1]?.toLowerCase();
+const getTicketStatus = (ticket: Ticket) => {
+  if (ticket.status === 2) return "answered";
+  if (ticket.status === 1 && !ticket.shouldBeAnswered) return "noReplyNeeded";
+  return "needsAnswer";
+};
 
-  switch (domain) {
-    case "gmail.com":
-      return "text-red-500 dark:text-red-400";
-    case "gorgia.ge":
-      return "text-blue-500 dark:text-blue-400";
-    case "yahoo.com":
-      return "text-purple-500 dark:text-purple-400";
-    case "outlook.com":
-    case "hotmail.com":
-      return "text-cyan-500 dark:text-cyan-400";
-    case "icloud.com":
-      return "text-sky-500 dark:text-sky-400";
+const getCardStyle = (ticket: Ticket) => {
+  const status = getTicketStatus(ticket);
+  switch (status) {
+    case "answered":
+    case "noReplyNeeded":
+      return "bg-gorgia-dark-blue/5 hover:bg-gorgia-dark-blue/10 border-gorgia-dark-blue/10";
+    case "needsAnswer":
+      return "bg-amber-50/50 hover:bg-amber-50/80 border-amber-100";
     default:
-      return "text-muted-foreground";
+      return "";
   }
 };
 
-const getStatusColor = (status: number) => {
+const getStatusBadge = (ticket: Ticket) => {
+  const status = getTicketStatus(ticket);
   switch (status) {
-    case 0:
-      return "bg-secondary text-secondary-foreground";
-    case 1:
-      return "bg-primary text-primary-foreground";
-    case 2:
-      return "bg-muted text-muted-foreground";
-    default:
-      return "bg-secondary text-secondary-foreground";
-  }
-};
-
-const getStatusText = (status: number) => {
-  switch (status) {
-    case 0:
-      return "უცნობი";
-    case 1:
-      return "მიმდინარე";
-    case 2:
-      return "დასრულებული";
-    default:
-      return "უცნობი";
+    case "answered":
+      return {
+        variant: "outline" as const,
+        text: "პასუხგაცემული",
+        className:
+          "bg-gorgia-dark-blue/10 text-gorgia-dark-blue border-gorgia-dark-blue/20",
+      };
+    case "noReplyNeeded":
+      return {
+        variant: "outline" as const,
+        text: "პასუხი არ საჭიროებს",
+        className:
+          "bg-gorgia-dark-blue/10 text-gorgia-dark-blue border-gorgia-dark-blue/20",
+      };
+    case "needsAnswer":
+      return {
+        variant: "outline" as const,
+        text: "პასუხის მოლოდინში",
+        className: "bg-amber-100 text-amber-700 border-amber-200",
+      };
   }
 };
 
@@ -78,45 +75,24 @@ export const TicketCard: FC<TicketCardProps> = ({
   onReply,
   isReplying,
 }) => {
+  const status = getTicketStatus(ticket);
+  const statusBadge = getStatusBadge(ticket);
+
   return (
-    <Card
-      className={cn(
-        "transition-all duration-300 hover:shadow-md",
-        getProviderIcon(ticket.from)
-      )}
-    >
+    <Card className={cn("transition-all duration-300", getCardStyle(ticket))}>
       <CardHeader className="p-4 pb-2 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center min-w-0">
-            <Mail
-              className={cn(
-                "h-4 w-4 shrink-0 mr-2",
-                getProviderIcon(ticket.from)
-              )}
-            />
+            <Mail className="h-4 w-4 shrink-0 mr-2 text-muted-foreground" />
             <span className="text-sm font-medium truncate">{ticket.from}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Badge
-              variant="outline"
-              className={cn(
-                "text-xs px-1.5 h-5",
-                getStatusColor(ticket.status)
-              )}
+              variant={statusBadge.variant}
+              className={cn("text-xs px-1.5 h-5", statusBadge.className)}
             >
-              {ticket.status === 2 ? (
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-              ) : (
-                <Clock className="w-3 h-3 mr-1" />
-              )}
-              {getStatusText(ticket.status)}
+              {statusBadge.text}
             </Badge>
-            {ticket.shouldBeAnswered && (
-              <Badge variant="secondary" className="text-xs px-1.5 h-5">
-                <MessageCircle className="w-3 h-3 mr-1" />
-                პასუხის გაცემა
-              </Badge>
-            )}
             <div className="flex items-center text-xs text-muted-foreground whitespace-nowrap">
               <Calendar className="w-3 h-3 mr-1" />
               {new Date(ticket.date).toLocaleString("ka-GE", {
@@ -133,7 +109,7 @@ export const TicketCard: FC<TicketCardProps> = ({
       </CardHeader>
 
       <CardContent className="p-4 pt-0 space-y-3">
-        <div className="rounded border bg-muted/30 p-3">
+        <div className="rounded border bg-white p-3">
           <div
             className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
             dangerouslySetInnerHTML={{ __html: ticket.content }}
@@ -141,18 +117,31 @@ export const TicketCard: FC<TicketCardProps> = ({
         </div>
 
         {ticket.ticketAnswer && (
-          <div className="rounded border border-primary/10 bg-primary/5 p-3">
+          <div className="rounded border border-gorgia-dark-blue/10 bg-gorgia-dark-blue/5 p-3">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
-              <span className="font-medium text-xs">პასუხი</span>
+              <ArrowUpRight className="h-3.5 w-3.5 text-gorgia-dark-blue" />
+              <span className="font-medium text-xs text-gorgia-dark-blue">
+                პასუხი
+              </span>
             </div>
             <div className="text-sm text-muted-foreground">
-              {ticket.ticketAnswer}
+              {ticket.ticketAnswer.replace(/<br><br>.*/, "")}
             </div>
           </div>
         )}
 
-        {!ticket.ticketAnswer && ticket.shouldBeAnswered && (
+        {status === "noReplyNeeded" && !ticket.ticketAnswer && (
+          <div className="rounded border border-gorgia-dark-blue/10 bg-gorgia-dark-blue/5 p-3">
+            <div className="flex items-center gap-1.5">
+              <Info className="h-3.5 w-3.5 text-gorgia-dark-blue" />
+              <span className="text-xs text-gorgia-dark-blue">
+                არ საჭიროებს პასუხის გაცემას
+              </span>
+            </div>
+          </div>
+        )}
+
+        {status === "needsAnswer" && (
           <div className="space-y-2">
             <Label
               htmlFor={`reply-${ticket.id}`}
@@ -166,13 +155,13 @@ export const TicketCard: FC<TicketCardProps> = ({
                 placeholder="შეიყვანეთ პასუხი..."
                 value={replyContent}
                 onChange={(e) => onReplyChange(e.target.value)}
-                className="min-h-[80px] text-sm resize-none"
+                className="min-h-[80px] text-sm resize-none bg-white"
               />
               <Button
                 size="icon"
                 disabled={isReplying}
                 onClick={onReply}
-                className="h-[80px] w-9"
+                className="h-[80px] w-9 bg-gorgia-dark-blue hover:bg-gorgia-dark-blue/90"
               >
                 {isReplying ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
