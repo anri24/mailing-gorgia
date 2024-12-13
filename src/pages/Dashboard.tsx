@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { Ticket } from "@/queries/api/query-slice";
 
-type FilterStatus = "all" | "needsAnswer" | "answered" | "noReplyNeeded";
+type FilterStatus = "all" | "needsReplyUrgent" | "needsReply" | "answered";
 
 export const Dashboard = () => {
   const [page, setPage] = useState(1);
@@ -47,17 +47,22 @@ export const Dashboard = () => {
         delete next[ticketId];
         return next;
       });
-    } catch (error) {
+      toast.success("პასუხი წარმატებით გაიგზავნა!");
+    } catch (error: unknown) {
       console.error("Reply error:", error);
+      toast.error("პასუხის გაგზავნა შეუშერხდა.");
     } finally {
       setReplyingTickets((prev) => ({ ...prev, [ticketId]: false }));
     }
   };
 
-  const getTicketStatus = (ticket: Ticket) => {
+  const getTicketStatus = (
+    ticket: Ticket
+  ): "needsReplyUrgent" | "needsReply" | "answered" => {
     if (ticket.status === 2) return "answered";
-    if (ticket.status === 1 && !ticket.shouldBeAnswered) return "noReplyNeeded";
-    return "needsAnswer";
+    if (ticket.status === 1)
+      return ticket.shouldBeAnswered ? "needsReplyUrgent" : "needsReply";
+    throw new Error(`Unhandled ticket status: ${ticket.status}`);
   };
 
   const displayedTickets = tickets?.filter((ticket) => {
@@ -72,6 +77,11 @@ export const Dashboard = () => {
 
     return matchesSearch && matchesStatus;
   });
+
+  const urgentTicketsCount =
+    displayedTickets?.filter(
+      (ticket) => ticket.status === 1 && ticket.shouldBeAnswered
+    ).length || 0;
 
   if (isLoading) {
     return (
@@ -99,9 +109,16 @@ export const Dashboard = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">წერილები</h1>
-        <Badge variant="outline" className="text-sm">
-          სულ: {displayedTickets?.length || 0}
-        </Badge>
+        <div className="flex space-x-2">
+          <Badge variant="outline" className="text-sm">
+            სულ: {displayedTickets?.length || 0}
+          </Badge>
+          {urgentTicketsCount > 0 && (
+            <Badge variant="destructive" className="text-sm">
+              პასუხის მოლოდინში (24სთ): {urgentTicketsCount}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -112,20 +129,23 @@ export const Dashboard = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-8"
+            aria-label="ძებნა სათაურის ან გამომგზავნის მიხედვით"
           />
         </div>
         <Select
           value={filterStatus}
           onValueChange={(value: FilterStatus) => setFilterStatus(value)}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[220px]">
             <SelectValue placeholder="სტატუსის ფილტრი" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">ყველა</SelectItem>
-            <SelectItem value="needsAnswer">პასუხის მოლოდინში</SelectItem>
+            <SelectItem value="needsReplyUrgent">
+              პასუხის მოლოდინში (24სთ)
+            </SelectItem>
+            <SelectItem value="needsReply">პასუხის მოლოდინში</SelectItem>
             <SelectItem value="answered">პასუხგაცემული</SelectItem>
-            <SelectItem value="noReplyNeeded">პასუხს არ საჭიროებს</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -151,12 +171,12 @@ export const Dashboard = () => {
           <div className="text-center py-8 text-muted-foreground">
             {searchQuery
               ? "ასეთი წერილები არ მოიძებნა"
-              : filterStatus === "needsAnswer"
-                ? "პასუხის მოლოდინში მყოფი წერილები არ არის"
-                : filterStatus === "answered"
-                  ? "პასუხგაცემული წერილები არ არის"
-                  : filterStatus === "noReplyNeeded"
-                    ? "წერილები, რომლებიც არ საჭიროებენ პასუხს, არ არის"
+              : filterStatus === "needsReplyUrgent"
+                ? "პასუხის მოლოდინში (წარუდგინებული) მყოფი წერილები არ არის"
+                : filterStatus === "needsReply"
+                  ? "პასუხის მოლოდინში მყოფი წერილები არ არის"
+                  : filterStatus === "answered"
+                    ? "პასუხგაცემული წერილები არ არის"
                     : "წერილები არ მოიძებნა"}
           </div>
         )}
@@ -177,9 +197,9 @@ export const Dashboard = () => {
           <Badge variant="secondary" className="text-sm px-2 py-1">
             გვერდი {page}
           </Badge>
-          {displayedTickets && displayedTickets.length >= amount && (
+          {tickets && tickets.length >= amount && (
             <Badge variant="outline" className="text-sm px-2 py-1">
-              შემდეგ გვერდზე გადასვლა ხელმისაწვდომია
+              შემდეგ გვერდზე გადასვლა შეუძლებელია
             </Badge>
           )}
         </div>
@@ -187,7 +207,7 @@ export const Dashboard = () => {
           variant="outline"
           size="sm"
           onClick={() => setPage((p) => p + 1)}
-          disabled={!displayedTickets || displayedTickets.length < amount}
+          disabled={!tickets || tickets.length < amount}
           className="gap-1"
         >
           შემდეგი

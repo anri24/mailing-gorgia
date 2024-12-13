@@ -11,7 +11,6 @@ import {
   Loader2,
   Calendar,
   ArrowUpRight,
-  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,20 +22,21 @@ interface TicketCardProps {
   isReplying: boolean;
 }
 
-const getTicketStatus = (ticket: Ticket) => {
-  if (ticket.status === 2) return "answered";
-  if (ticket.status === 1 && !ticket.shouldBeAnswered) return "noReplyNeeded";
-  return "needsAnswer";
+const getTicketStatus = (ticket: Ticket): "needsReply" | "replied" => {
+  if (ticket.status === 2) return "replied";
+  if (ticket.status === 1) return "needsReply";
+  throw new Error(`Unhandled ticket status: ${ticket.status}`);
 };
 
 const getCardStyle = (ticket: Ticket) => {
   const status = getTicketStatus(ticket);
   switch (status) {
-    case "answered":
-    case "noReplyNeeded":
+    case "replied":
       return "bg-gorgia-dark-blue/5 hover:bg-gorgia-dark-blue/10 border-gorgia-dark-blue/10";
-    case "needsAnswer":
-      return "bg-amber-50/50 hover:bg-amber-50/80 border-amber-100";
+    case "needsReply":
+      return ticket.shouldBeAnswered
+        ? "bg-red-50/50 hover:bg-red-50/80 border-red-100"
+        : "bg-gorgia-dark-blue/5 hover:bg-gorgia-dark-blue/10 border-gorgia-dark-blue/10";
     default:
       return "";
   }
@@ -45,25 +45,19 @@ const getCardStyle = (ticket: Ticket) => {
 const getStatusBadge = (ticket: Ticket) => {
   const status = getTicketStatus(ticket);
   switch (status) {
-    case "answered":
+    case "replied":
       return {
         variant: "outline" as const,
         text: "პასუხგაცემული",
-        className:
-          "bg-lime-500/10 text-lime-500 border-lime-500/20",
+        className: "bg-lime-500/10 text-lime-500 border-lime-500/20",
       };
-    case "noReplyNeeded":
-      return {
-        variant: "outline" as const,
-        text: "პასუხი არ საჭიროებს",
-        className:
-          "bg-gorgia-dark-blue/10 text-gorgia-dark-blue border-gorgia-dark-blue/20",
-      };
-    case "needsAnswer":
+    case "needsReply":
       return {
         variant: "outline" as const,
         text: "პასუხის მოლოდინში",
-        className: "bg-amber-100 text-amber-700 border-amber-200",
+        className: ticket.shouldBeAnswered
+          ? "bg-red-100 text-red-700 border-red-200"
+          : "bg-red-100 text-red-700 border-red-200",
       };
   }
 };
@@ -130,18 +124,7 @@ export const TicketCard: FC<TicketCardProps> = ({
           </div>
         )}
 
-        {status === "noReplyNeeded" && !ticket.ticketAnswer && (
-          <div className="rounded border border-gorgia-dark-blue/10 bg-gorgia-dark-blue/5 p-3">
-            <div className="flex items-center gap-1.5">
-              <Info className="h-3.5 w-3.5 text-gorgia-dark-blue" />
-              <span className="text-xs text-gorgia-dark-blue">
-                არ საჭიროებს პასუხის გაცემას
-              </span>
-            </div>
-          </div>
-        )}
-
-        {status === "needsAnswer" && (
+        {status === "needsReply" && (
           <div className="space-y-2">
             <Label
               htmlFor={`reply-${ticket.id}`}
