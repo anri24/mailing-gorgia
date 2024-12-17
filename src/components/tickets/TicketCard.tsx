@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useState, useRef, useLayoutEffect } from "react";
 import { Ticket } from "@/queries/api/query-slice";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +11,15 @@ import {
   Loader2,
   Calendar,
   ArrowUpRight,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -55,9 +62,7 @@ const getStatusBadge = (ticket: Ticket) => {
       return {
         variant: "outline" as const,
         text: "პასუხის მოლოდინში",
-        className: ticket.shouldBeAnswered
-          ? "bg-red-100 text-red-700 border-red-200"
-          : "bg-red-100 text-red-700 border-red-200",
+        className: "bg-red-100 text-red-700 border-red-200",
       };
   }
 };
@@ -71,6 +76,17 @@ export const TicketCard: FC<TicketCardProps> = ({
 }) => {
   const status = getTicketStatus(ticket);
   const statusBadge = getStatusBadge(ticket);
+  const [canExpand, setCanExpand] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const MAX_HEIGHT = 150; // Maximum height in pixels before truncation
+
+  useLayoutEffect(() => {
+    const contentEl = contentRef.current;
+    if (contentEl) {
+      setCanExpand(contentEl.scrollHeight > MAX_HEIGHT);
+    }
+  }, [ticket.content]);
 
   return (
     <Card className={cn("transition-all duration-300", getCardStyle(ticket))}>
@@ -104,10 +120,46 @@ export const TicketCard: FC<TicketCardProps> = ({
 
       <CardContent className="p-4 pt-0 space-y-3">
         <div className="rounded border bg-white p-3">
-          <div
-            className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-            dangerouslySetInnerHTML={{ __html: ticket.content }}
-          />
+          {canExpand ? (
+            <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center justify-center text-sm mb-2"
+                >
+                  {isExpanded ? (
+                    <>
+                      ნაკლების ხილვა <ChevronUp className="ml-1 h-4 w-4 transition-transform duration-300" />
+                    </>
+                  ) : (
+                    <>
+                      მეტის ხილვა <ChevronDown className="ml-1 h-4 w-4 transition-transform duration-300" />
+                    </>
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div
+                  className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [& img]:max-w-full [& img]:h-auto transition-all duration-300"
+                  dangerouslySetInnerHTML={{ __html: ticket.content }}
+                />
+              </CollapsibleContent>
+              {!isExpanded && (
+                <div
+                  className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [& img]:max-w-full [& img]:h-auto max-h-[150px] overflow-hidden"
+                  ref={contentRef}
+                  dangerouslySetInnerHTML={{ __html: ticket.content }}
+                />
+              )}
+            </Collapsible>
+          ) : (
+            <div
+              ref={contentRef}
+              className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [& img]:max-w-full [& img]:h-auto"
+              dangerouslySetInnerHTML={{ __html: ticket.content }}
+            />
+          )}
         </div>
 
         {ticket.ticketAnswer && (
