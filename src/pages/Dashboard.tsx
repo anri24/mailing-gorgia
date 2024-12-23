@@ -18,11 +18,13 @@ import { cn } from "@/lib/utils";
 
 type FilterStatus = "all" | "needsReplyUrgent" | "needsReply" | "answered";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50, 100] as const;
 const MAX_PAGES_SHOWN = 5;
 
 export const Dashboard = () => {
   const [page, setPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] =
+    useState<(typeof ITEMS_PER_PAGE_OPTIONS)[number]>(10);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [replyContents, setReplyContents] = useState<Record<number, string>>(
@@ -33,11 +35,14 @@ export const Dashboard = () => {
   >({});
 
   const {
-    data: tickets,
+    data: ticketsData,
     isLoading,
     error,
     isFetching,
-  } = useTickets(page, ITEMS_PER_PAGE);
+  } = useTickets(page, itemsPerPage);
+
+  const tickets = ticketsData?.tickets ?? [];
+  const totalItems = ticketsData?.totalItems ?? 0;
 
   const replyMutation = useReplyToTicket();
 
@@ -93,7 +98,7 @@ export const Dashboard = () => {
     ).length || 0;
 
   // Calculate pagination
-  const totalPages = Math.ceil((tickets?.length || 0) / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
   const showPagination = totalPages > 1;
 
   const getPaginationRange = () => {
@@ -154,7 +159,10 @@ export const Dashboard = () => {
         <h1 className="text-2xl font-bold tracking-tight">წერილები</h1>
         <div className="flex space-x-2">
           <Badge variant="outline" className="text-sm">
-            სულ: {displayedTickets?.length || 0}
+            სულ: {totalItems}
+          </Badge>
+          <Badge variant="outline" className="text-sm">
+            გვერდზე: {displayedTickets?.length || 0}
           </Badge>
           {urgentTicketsCount > 0 && (
             <Badge variant="destructive" className="text-sm">
@@ -180,7 +188,7 @@ export const Dashboard = () => {
           onValueChange={(value: FilterStatus) => setFilterStatus(value)}
         >
           <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="სტატუსის ფილტრი" />
+            <SelectValue placeholder="სტატუსი ფილტრი" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">ყველა</SelectItem>
@@ -189,6 +197,24 @@ export const Dashboard = () => {
             </SelectItem>
             <SelectItem value="needsReply">პასუხის მოლოდინში</SelectItem>
             <SelectItem value="answered">პასუხგაცემული</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={itemsPerPage.toString()}
+          onValueChange={(value) => {
+            setItemsPerPage(Number(value) as typeof itemsPerPage);
+            setPage(1); // Reset to first page when changing items per page
+          }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="გვერდის ზომა" />
+          </SelectTrigger>
+          <SelectContent>
+            {ITEMS_PER_PAGE_OPTIONS.map((size) => (
+              <SelectItem key={size} value={size.toString()}>
+                {size} ჩანაწერი
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -220,7 +246,7 @@ export const Dashboard = () => {
                   ? "პასუხის მოლოდინში მყოფი წერილები არ არის"
                   : filterStatus === "answered"
                     ? "პასუხგაცემული წერილები არ არის"
-                    : "წერილები არ მოიძებნა"}
+                    : "წე��ილები არ მოიძებნა"}
           </div>
         )}
       </div>

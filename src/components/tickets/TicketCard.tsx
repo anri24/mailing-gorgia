@@ -79,8 +79,10 @@ const getStatusBadge = (ticket: Ticket) => {
 const handleDownload = async (fileName: string) => {
   try {
     const token = localStorage.getItem("token");
+    const cleanFileName = fileName.replace(/^cid:/, "");
+
     const response = await fetch(
-      `http://10.150.20.112:7291/Attachment?fileName=${encodeURIComponent(fileName)}`,
+      `${import.meta.env.VITE_API_URL}/Attachment?fileName=${encodeURIComponent(cleanFileName)}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -94,7 +96,7 @@ const handleDownload = async (fileName: string) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = fileName;
+    a.download = cleanFileName;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -243,18 +245,23 @@ export const TicketCard: FC<TicketCardProps> = ({
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {ticket.attachments.map((fileName, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs flex items-center gap-2"
-                  onClick={() => handleDownload(fileName)}
-                >
-                  {getFileIcon(fileName)}
-                  <span className="truncate max-w-[200px]">{fileName}</span>
-                </Button>
-              ))}
+              {ticket.attachments.map((fileName, index) => {
+                const displayName = fileName.replace(/^cid:/, "");
+                return (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs flex items-center gap-2"
+                    onClick={() => handleDownload(fileName)}
+                  >
+                    {getFileIcon(displayName)}
+                    <span className="truncate max-w-[200px]">
+                      {displayName}
+                    </span>
+                  </Button>
+                );
+              })}
             </div>
           </div>
         )}

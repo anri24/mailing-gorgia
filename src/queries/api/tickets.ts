@@ -51,7 +51,7 @@ export function useReplyToTicket() {
     },
     onError: (error) => {
       console.error("Failed to send reply:", error);
-      toast.error("პასუხის გაგზავნა ვერ მოხერხდა");
+      toast.error("პასუხის გაგ���ავნა ვერ მოხერხდა");
     },
   });
 }

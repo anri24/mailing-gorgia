@@ -14,7 +14,7 @@ const SignInPath = "/Auth";
 export const TicketSchema = z.object({
   subject: z.string(),
   from: z.string(),
-  to: z.string(),
+  to: z.string().optional(),
   content: z.string(),
   date: z.string(),
   status: z.number(),
@@ -27,7 +27,10 @@ export const TicketSchema = z.object({
 
 export type Ticket = z.infer<typeof TicketSchema>;
 
-const TicketsResponse = z.array(TicketSchema);
+const TicketsResponse = z.object({
+  tickets: z.array(TicketSchema),
+  totalItems: z.number(),
+});
 const TicketsPath = "/Ticket";
 
 export const ReplyTicketSchema = z.union([
