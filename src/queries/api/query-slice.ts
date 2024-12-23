@@ -22,6 +22,7 @@ export const TicketSchema = z.object({
   ticketAnswer: z.string().nullable(),
   id: z.number(),
   isDeleted: z.boolean(),
+  attachments: z.array(z.string()),
 });
 
 export type Ticket = z.infer<typeof TicketSchema>;
@@ -29,10 +30,14 @@ export type Ticket = z.infer<typeof TicketSchema>;
 const TicketsResponse = z.array(TicketSchema);
 const TicketsPath = "/Ticket";
 
-export const ReplyTicketSchema = z.object({
-  id: z.number(),
-  content: z.string().min(1, "Reply content is required"),
-});
+export const ReplyTicketSchema = z.union([
+  z.object({
+    id: z.number(),
+    content: z.string().min(1, "Reply content is required"),
+    files: z.array(z.instanceof(File)).optional(),
+  }),
+  z.instanceof(FormData),
+]);
 
 export type ReplyTicketType = z.infer<typeof ReplyTicketSchema>;
 
@@ -61,15 +66,21 @@ const getTickets = api<
   type: "private",
 });
 
-const replyToTicket = api<ReplyTicketType, { success: boolean; message: string }>({
+const replyToTicket = api<
+  ReplyTicketType,
+  { success: boolean; message: string }
+>({
   method: "POST",
-  path: ({ id, content }) => `${TicketsPath}?id=${id}&content=${encodeURIComponent(content)}`,
+  path: TicketsPath,
   requestSchema: ReplyTicketSchema,
   responseSchema: z.object({
     success: z.boolean(),
     message: z.string(),
   }),
   type: "private",
+  headers: {
+    "Content-Type": "multipart/form-data",
+  },
 });
 
 const UsersPath = "/User";
@@ -157,6 +168,3 @@ export const TicketsAPI = {
   getTickets,
   replyToTicket,
 };
-
-
-

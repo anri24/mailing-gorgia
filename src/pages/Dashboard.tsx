@@ -14,12 +14,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { Ticket } from "@/queries/api/query-slice";
+import { cn } from "@/lib/utils";
 
 type FilterStatus = "all" | "needsReplyUrgent" | "needsReply" | "answered";
 
+const ITEMS_PER_PAGE = 10;
+const MAX_PAGES_SHOWN = 5;
+
 export const Dashboard = () => {
   const [page, setPage] = useState(1);
-  const [amount] = useState(20);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [replyContents, setReplyContents] = useState<Record<number, string>>(
@@ -29,7 +32,13 @@ export const Dashboard = () => {
     Record<number, boolean>
   >({});
 
-  const { data: tickets, isLoading, error } = useTickets(page, amount);
+  const {
+    data: tickets,
+    isLoading,
+    error,
+    isFetching,
+  } = useTickets(page, ITEMS_PER_PAGE);
+
   const replyMutation = useReplyToTicket();
 
   const handleReply = async (ticketId: number) => {
@@ -82,6 +91,40 @@ export const Dashboard = () => {
     displayedTickets?.filter(
       (ticket) => ticket.status === 1 && ticket.shouldBeAnswered
     ).length || 0;
+
+  // Calculate pagination
+  const totalPages = Math.ceil((tickets?.length || 0) / ITEMS_PER_PAGE);
+  const showPagination = totalPages > 1;
+
+  const getPaginationRange = () => {
+    const range: (number | string)[] = [];
+    const showLeftDots = page > 3;
+    const showRightDots = page < totalPages - 2;
+
+    if (totalPages <= MAX_PAGES_SHOWN) {
+      range.push(...Array.from({ length: totalPages }, (_, i) => i + 1));
+    } else {
+      if (!showLeftDots && showRightDots) {
+        range.push(
+          ...Array.from({ length: MAX_PAGES_SHOWN - 1 }, (_, i) => i + 1),
+          "...",
+          totalPages
+        );
+      } else if (showLeftDots && !showRightDots) {
+        range.push(
+          1,
+          "...",
+          ...Array.from(
+            { length: MAX_PAGES_SHOWN - 1 },
+            (_, i) => totalPages - (MAX_PAGES_SHOWN - 2) + i
+          )
+        );
+      } else {
+        range.push(1, "...", page - 1, page, page + 1, "...", totalPages);
+      }
+    }
+    return range;
+  };
 
   if (isLoading) {
     return (
@@ -182,38 +225,56 @@ export const Dashboard = () => {
         )}
       </div>
 
-      <div className="flex items-center justify-between border-t pt-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="gap-1"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          წინა
-        </Button>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-sm px-2 py-1">
-            გვერდი {page}
-          </Badge>
-          {tickets && tickets.length >= amount && (
-            <Badge variant="outline" className="text-sm px-2 py-1">
-              შემდეგ გვერდზე გადასვლა შეუძლებელია
-            </Badge>
-          )}
+      {showPagination && (
+        <div className="flex items-center justify-between border-t pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1 || isFetching}
+            className="gap-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            წინა
+          </Button>
+
+          <div className="flex items-center gap-2">
+            {getPaginationRange().map((pageNum, idx) =>
+              pageNum === "..." ? (
+                <span key={`dots-${idx}`} className="text-muted-foreground">
+                  ...
+                </span>
+              ) : (
+                <Button
+                  key={pageNum}
+                  variant={pageNum === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPage(Number(pageNum))}
+                  disabled={isFetching}
+                  className={cn(
+                    "min-w-[32px] px-2",
+                    pageNum === page &&
+                      "bg-gorgia-dark-blue hover:bg-gorgia-dark-blue/90"
+                  )}
+                >
+                  {pageNum}
+                </Button>
+              )
+            )}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page >= totalPages || isFetching}
+            className="gap-1"
+          >
+            შემდეგი
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => p + 1)}
-          disabled={!tickets || tickets.length < amount}
-          className="gap-1"
-        >
-          შემდეგი
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      )}
     </div>
   );
 };

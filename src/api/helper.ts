@@ -8,6 +8,7 @@ interface APICallPayload<Request, Response> {
   requestSchema: z.ZodType<Request>;
   responseSchema: z.ZodType<Response>;
   type?: "private" | "public";
+  headers?: AxiosRequestConfig["headers"];
 }
 
 export function api<Request, Response>({
@@ -15,11 +16,14 @@ export function api<Request, Response>({
   method,
   path,
   requestSchema,
+  headers,
   responseSchema,
 }: APICallPayload<Request, Response>) {
   return async (requestData: Request) => {
     try {
-      requestSchema.parse(requestData);
+      if (!(requestData instanceof FormData)) {
+        requestSchema.parse(requestData);
+      }
     } catch (error) {
       console.error("❌ Request validation failed:", error);
       throw error;
@@ -44,6 +48,12 @@ export function api<Request, Response>({
       url,
       params,
       data,
+      headers: {
+        ...headers,
+        ...(requestData instanceof FormData && {
+          "Content-Type": "multipart/form-data",
+        }),
+      },
     };
 
     try {
