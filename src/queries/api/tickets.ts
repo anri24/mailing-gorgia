@@ -2,11 +2,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ReplyTicketType, TicketsAPI } from "./query-slice";
 import { toast } from "sonner";
 
-export function useTickets(page: number = 1, amount: number = 10) {
+export function useTickets(
+  page: number = 1,
+  amount: number = 10,
+  fromDate?: string,
+  toDate?: string,
+  from?: string,
+  status?: number
+) {
   return useQuery({
-    queryKey: ["tickets", page, amount],
-    queryFn: () => TicketsAPI.getTickets({ page, amount }),
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["tickets", { page, amount, fromDate, toDate, from, status }],
+    queryFn: () =>
+      TicketsAPI.getTickets({ page, amount, fromDate, toDate, from, status }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: (previousData) => previousData,
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -51,7 +60,7 @@ export function useReplyToTicket() {
     },
     onError: (error) => {
       console.error("Failed to send reply:", error);
-      toast.error("პასუხის გაგ���ავნა ვერ მოხერხდა");
+      toast.error("პასუხის გაგზავნა ვერ მოხერხდა");
     },
   });
 }

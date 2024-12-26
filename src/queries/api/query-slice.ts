@@ -56,7 +56,14 @@ const signIn = api<
 });
 
 const getTickets = api<
-  { page: number; amount: number },
+  {
+    page: number;
+    amount: number;
+    fromDate?: string;
+    toDate?: string;
+    from?: string;
+    status?: number;
+  },
   z.infer<typeof TicketsResponse>
 >({
   method: "GET",
@@ -64,6 +71,10 @@ const getTickets = api<
   requestSchema: z.object({
     page: z.number(),
     amount: z.number(),
+    fromDate: z.string().optional(),
+    toDate: z.string().optional(),
+    from: z.string().optional(),
+    status: z.number().optional(),
   }),
   responseSchema: TicketsResponse,
   type: "private",

@@ -159,9 +159,11 @@ export const TicketCard: FC<TicketCardProps> = ({
   }, [ticket.content]);
 
   return (
-    <Card className={cn("transition-all duration-300", getCardStyle(ticket))}>
+    <Card
+      className={cn("transition-all duration-300 w-full", getCardStyle(ticket))}
+    >
       <CardHeader className="p-4 pb-2 space-y-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center min-w-0">
             <Mail className="h-4 w-4 shrink-0 mr-2 text-muted-foreground" />
             <span className="text-sm font-medium truncate">{ticket.from}</span>
@@ -190,14 +192,14 @@ export const TicketCard: FC<TicketCardProps> = ({
 
       <CardContent className="p-4 pt-0 space-y-3">
         {ticket.content && (
-          <div className="rounded border bg-white p-3">
+          <div className="rounded border bg-white p-3 overflow-hidden">
             {canExpand ? (
               <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex items-center justify-center text-sm mb-2"
+                    className="flex items-center justify-center text-sm mb-2 w-full"
                   >
                     {isExpanded ? (
                       <>
@@ -252,7 +254,7 @@ export const TicketCard: FC<TicketCardProps> = ({
                     key={index}
                     variant="outline"
                     size="sm"
-                    className="text-xs flex items-center gap-2"
+                    className="text-xs flex items-center gap-2 max-w-full"
                     onClick={() => handleDownload(fileName)}
                   >
                     {getFileIcon(displayName)}
@@ -274,7 +276,7 @@ export const TicketCard: FC<TicketCardProps> = ({
                 პასუხი
               </span>
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground break-words">
               {ticket.ticketAnswer.replace(/<br><br>.*/, "")}
             </div>
           </div>
@@ -289,7 +291,7 @@ export const TicketCard: FC<TicketCardProps> = ({
               პასუხის გაცემა
             </Label>
             <div className="space-y-2">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1">
                   <Textarea
                     id={`reply-${ticket.id}`}
@@ -327,7 +329,7 @@ export const TicketCard: FC<TicketCardProps> = ({
                   size="icon"
                   disabled={isReplying}
                   onClick={() => onReply(selectedFiles)}
-                  className="h-[80px] w-[80px] bg-gorgia-dark-blue hover:bg-gorgia-dark-blue/90"
+                  className="h-[80px] w-full sm:w-[80px] bg-gorgia-dark-blue hover:bg-gorgia-dark-blue/90"
                 >
                   {isReplying ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
